@@ -1,0 +1,77 @@
+name: 'webext-buildtools-chrome-webstore-action'
+description: 'Deploy your WebExtension to Chrome Web Store'
+author: 'cardinalby'
+inputs:
+  extensionDir:
+    description: 'Path to WebExtension directory'
+    required: true
+  zipGlobPattern:
+    description: 'Include files according to the pattern'
+    required: false
+    default: '**'
+  zipIgnore:
+    description: 'Patterns of files which will be excluded from the zip, separated by |'
+    required: false
+    default: '*.pem|.git|*.crx'
+  extensionId:
+    description: 'Your extension id in Chrome Web Store'
+    required: true
+  apiClientId:
+    description: 'Web Store API Client Id (use secrets!)'
+    required: true
+  apiClientSecret:
+    description: 'Web Store API Client Secret (use secrets!)'
+    required: true
+  apiRefreshToken:
+    description: 'Web Store API Refresh token (use secrets!)'
+    required: true
+  waitForUploadCheckCount:
+    description: 'Checks count in case of upload finished with IN_PROGRESS status'
+    required: false
+  waitForUploadCheckIntervalMs:
+    description: 'Checks interval in ms in case of upload finished with IN_PROGRESS status'
+    required: false
+  doPublish:
+    description: 'Perform publish after uploading finished. Set `false` if you want to publish manually'
+    default: 'true'
+    required: false
+  publishTarget:
+    description: 'Publishing target: `default` or `trustedTesters`'
+    default: 'default'
+    required: false
+  publishIgnore500Error:
+    description: 'Experimental feature to bypass undocumented Web Store behaviour. Consider 500 response as success'
+    default: 'false'
+    required: false
+  downloadCrxFilePath:
+    description: 'Path to save downloaded back published crx file (if doPublish is `true`)'
+    default: ''
+    required: false
+  downloadCrxPlatformOs:
+    description: 'OS to download published crx file for'
+    required: false
+  downloadCrxPlatformArch:
+    description: 'Architecture to download published crx file for'
+    required: false
+  downloadCrxPlatformNaclArch:
+    description: 'NACL Architecture to download published crx file for'
+    required: false
+outputs:
+  extensionName:
+    description: 'Extension name from manifest'
+  extensionVersion:
+    description: 'Extension version from manifest'
+  crxFilePath:
+    description: 'the absolute path to the downloaded crx file (if was)'
+  publishedWith500Error:
+    description: 'Publish finished with 500 error (special case)'
+  publishStatus:
+    description: >-
+      Set of publish statuses from API response separated by `|`. Can be empty in case of 500 error.
+      Values: OK, NOT_AUTHORIZED, INVALID_DEVELOPER, DEVELOPER_NO_OWNERSHIP, DEVELOPER_SUSPENDED,
+      ITEM_NOT_FOUND, ITEM_PENDING_REVIEW , ITEM_TAKEN_DOWN, PUBLISHER_SUSPENDED
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
+branding:
+  icon: 'package'
