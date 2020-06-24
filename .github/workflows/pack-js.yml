@@ -1,0 +1,32 @@
+name: "pack-js"
+on:
+  tags:
+    - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Pack
+        run: npm run pack
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
+      - uses: EndBug/add-and-commit@v4
+        with:
+          add: 'dist/index.js'
+          message: 'Pack with dependencies to dist/index.js'
+          tag: ${{ steps.tagName.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

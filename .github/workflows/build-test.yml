@@ -22,11 +22,3 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
-      - name: Pack
-        run: npm run pack
-      - uses: EndBug/add-and-commit@v4
-        with:
-          add: 'dist/index.js'
-          message: 'Update dist/index.js'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
