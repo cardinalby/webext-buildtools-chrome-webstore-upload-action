@@ -28,6 +28,5 @@ jobs:
         with:
           add: 'dist/index.js'
           message: 'Update dist/index.js'
-          tag: ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
