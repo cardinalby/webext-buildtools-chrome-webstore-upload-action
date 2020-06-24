@@ -12,6 +12,12 @@ jobs:
         node-version: [12.x]
     steps:
       - uses: actions/checkout@v2
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
@@ -22,12 +28,15 @@ jobs:
         run: npm run build
       - name: Pack
         run: npm run pack
-      - uses: olegtarasov/get-tag@v2
-        id: tagName
-      - uses: EndBug/add-and-commit@v4
+      - name: Commit dist/index.js
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add dist/index.js
+          git commit -m "Pack with dependencies to dist/index.js"
+          git tag ${{ steps.tagName.outputs.tag }} -f
+      - name: Push changes
+        uses: ad-m/github-push-action@master
         with:
-          add: 'dist/index.js'
-          message: 'Pack with dependencies to dist/index.js'
-          tag: ${{ steps.tagName.outputs.tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tags: true
