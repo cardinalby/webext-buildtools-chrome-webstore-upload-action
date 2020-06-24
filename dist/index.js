@@ -45,7 +45,102 @@ module.exports =
 /************************************************************************/
 /******/ ([
 /* 0 */,
-/* 1 */,
+/* 1 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.actionInputs = void 0;
+const ghActions = __importStar(__webpack_require__(470));
+const actionContext_1 = __webpack_require__(661);
+function hasInteger(string) {
+    return /^[-+]?\d+$/.test(string);
+}
+function isNumeric(string) {
+    return isFinite(parseFloat(string));
+}
+function getPathInput(inputName, required) {
+    const input = ghActions.getInput(inputName, { required });
+    if (required && !input) {
+        throw new Error(`Input ${inputName} is empty`);
+    }
+    return input
+        ? actionContext_1.getWorkspacePath(input)
+        : undefined;
+}
+function getBoolInput(inputName, required) {
+    const input = ghActions.getInput(inputName, { required }).toLowerCase();
+    if (input === '1' || input === 'true' || input === 'yes') {
+        return true;
+    }
+    if (input === '0' || input === 'false' || input === 'no') {
+        return false;
+    }
+    if (!required && input === '') {
+        return undefined;
+    }
+    throw new Error(`Input ${inputName} has invalid boolean value`);
+}
+function getIntInput(inputName, required) {
+    const input = ghActions.getInput(inputName, { required });
+    if (hasInteger(input)) {
+        return parseInt(input, 10);
+    }
+    if (!required && input === '') {
+        return undefined;
+    }
+    throw new Error(`Input ${inputName} has invalid integer value`);
+}
+function getNumberInput(inputName, required) {
+    const input = ghActions.getInput(inputName, { required });
+    if (isNumeric(input)) {
+        return parseFloat(input);
+    }
+    if (!required && input === '') {
+        return undefined;
+    }
+    throw new Error(`Input ${inputName} has invalid number value`);
+}
+function getStringInput(inputName, required, isSecret = false) {
+    const input = ghActions.getInput(inputName, { required });
+    if (!required && input === '') {
+        return undefined;
+    }
+    if (isSecret) {
+        ghActions.setSecret(input);
+    }
+    return input;
+}
+exports.actionInputs = {
+    getString: getStringInput,
+    getInt: getIntInput,
+    getFloat: getNumberInput,
+    getBool: getBoolInput,
+    getWsPath: getPathInput
+};
+//# sourceMappingURL=actionInputs.js.map
+
+/***/ }),
 /* 2 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -6549,161 +6644,7 @@ exports.FileBuildAsset = FileBuildAsset;
 
 /***/ }),
 /* 123 */,
-/* 124 */
-/***/ (function(__unusedmodule, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __webpack_require__(470);
-
-// EXTERNAL MODULE: external "path"
-var external_path_ = __webpack_require__(622);
-var external_path_default = /*#__PURE__*/__webpack_require__.n(external_path_);
-
-// CONCATENATED MODULE: ./node_modules/github-actions-utils/dist/actionContext.js
-
-/**
- * @param relativePath if undefined, workspace path will be returned
- */
-function getWorkspacePath(relativePath = undefined) {
-    const workspaceDir = process.env[`GITHUB_WORKSPACE`];
-    if (workspaceDir === undefined) {
-        throw new Error('GITHUB_WORKSPACE env variable is not set. Did you perform checkout action?');
-    }
-    return relativePath
-        ? external_path_default().join(workspaceDir, relativePath)
-        : workspaceDir;
-}
-//# sourceMappingURL=actionContext.js.map
-// CONCATENATED MODULE: ./node_modules/github-actions-utils/dist/actionInputs.js
-
-
-function hasInteger(string) {
-    return /^[-+]?\d+$/.test(string);
-}
-function isNumeric(string) {
-    return isFinite(parseFloat(string));
-}
-function getPathInput(inputName, required) {
-    const input = Object(core.getInput)(inputName, { required });
-    if (required && !input) {
-        throw new Error(`Input ${inputName} is empty`);
-    }
-    return input
-        ? getWorkspacePath(input)
-        : undefined;
-}
-function getBoolInput(inputName, required) {
-    const input = Object(core.getInput)(inputName, { required }).toLowerCase();
-    if (input === '1' || input === 'true' || input === 'yes') {
-        return true;
-    }
-    if (input === '0' || input === 'false' || input === 'no') {
-        return false;
-    }
-    if (!required && input === '') {
-        return undefined;
-    }
-    throw new Error(`Input ${inputName} has invalid boolean value`);
-}
-function getIntInput(inputName, required) {
-    const input = Object(core.getInput)(inputName, { required });
-    if (hasInteger(input)) {
-        return parseInt(input, 10);
-    }
-    if (!required && input === '') {
-        return undefined;
-    }
-    throw new Error(`Input ${inputName} has invalid integer value`);
-}
-function getNumberInput(inputName, required) {
-    const input = Object(core.getInput)(inputName, { required });
-    if (isNumeric(input)) {
-        return parseFloat(input);
-    }
-    if (!required && input === '') {
-        return undefined;
-    }
-    throw new Error(`Input ${inputName} has invalid number value`);
-}
-function getStringInput(inputName, required, isSecret = false) {
-    const input = Object(core.getInput)(inputName, { required });
-    if (!required && input === '') {
-        return undefined;
-    }
-    if (isSecret) {
-        Object(core.setSecret)(input);
-    }
-    return input;
-}
-const actionInputs = {
-    getString: getStringInput,
-    getInt: getIntInput,
-    getFloat: getNumberInput,
-    getBool: getBoolInput,
-    getWsPath: getPathInput
-};
-//# sourceMappingURL=actionInputs.js.map
-// CONCATENATED MODULE: ./node_modules/github-actions-utils/dist/actionOutput.js
-
-class actionOutput_ActionOutput {
-    constructor(name) {
-        this._name = name;
-    }
-    getName() {
-        return this._name;
-    }
-    getValue() {
-        return this._value;
-    }
-    setValue(value) {
-        this._value = value;
-        Object(core.setOutput)(this._name, value);
-    }
-}
-class actionOutput_ActionTrOutput {
-    constructor(name, transform) {
-        this._name = name;
-        this._transform = transform;
-    }
-    getName() {
-        return this._name;
-    }
-    getValue() {
-        return this._value;
-    }
-    setValue(value) {
-        this._value = value;
-        this._stringValue = this._transform(value);
-        Object(core.setOutput)(this._name, this._stringValue);
-    }
-    getStringValue() {
-        return this._stringValue;
-    }
-}
-//# sourceMappingURL=actionOutput.js.map
-// CONCATENATED MODULE: ./node_modules/github-actions-utils/dist/utils.js
-function transformIfSet(value, callback) {
-    return value === undefined
-        ? undefined
-        : callback(value);
-}
-//# sourceMappingURL=utils.js.map
-// CONCATENATED MODULE: ./node_modules/github-actions-utils/dist/index.js
-/* concated harmony reexport */ __webpack_require__.d(__webpack_exports__, "actionInputs", function() { return actionInputs; });
-/* concated harmony reexport */ __webpack_require__.d(__webpack_exports__, "ActionOutput", function() { return actionOutput_ActionOutput; });
-/* concated harmony reexport */ __webpack_require__.d(__webpack_exports__, "ActionTrOutput", function() { return actionOutput_ActionTrOutput; });
-/* concated harmony reexport */ __webpack_require__.d(__webpack_exports__, "getWorkspacePath", function() { return getWorkspacePath; });
-/* concated harmony reexport */ __webpack_require__.d(__webpack_exports__, "transformIfSet", function() { return transformIfSet; });
-
-
-
-
-//# sourceMappingURL=index.js.map
-
-/***/ }),
+/* 124 */,
 /* 125 */,
 /* 126 */,
 /* 127 */,
@@ -35988,7 +35929,7 @@ module.exports = (options, iter) => {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.actionInputs = void 0;
-const github_actions_utils_1 = __webpack_require__(124);
+const github_actions_utils_1 = __webpack_require__(690);
 exports.actionInputs = {
     extensionDir: github_actions_utils_1.actionInputs.getWsPath('extensionDir', true),
     zipGlobPattern: github_actions_utils_1.actionInputs.getString('zipGlobPattern', false),
@@ -57822,12 +57763,119 @@ function Writable(fn, options) {
 
 /***/ }),
 /* 657 */,
-/* 658 */,
+/* 658 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.transformIfSet = void 0;
+function transformIfSet(value, callback) {
+    return value === undefined
+        ? undefined
+        : callback(value);
+}
+exports.transformIfSet = transformIfSet;
+//# sourceMappingURL=utils.js.map
+
+/***/ }),
 /* 659 */,
 /* 660 */,
-/* 661 */,
+/* 661 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getWorkspacePath = void 0;
+const path_1 = __importDefault(__webpack_require__(622));
+/**
+ * @param relativePath if undefined, workspace path will be returned
+ */
+function getWorkspacePath(relativePath = undefined) {
+    const workspaceDir = process.env[`GITHUB_WORKSPACE`];
+    if (workspaceDir === undefined) {
+        throw new Error('GITHUB_WORKSPACE env variable is not set. Did you perform checkout action?');
+    }
+    return relativePath
+        ? path_1.default.join(workspaceDir, relativePath)
+        : workspaceDir;
+}
+exports.getWorkspacePath = getWorkspacePath;
+//# sourceMappingURL=actionContext.js.map
+
+/***/ }),
 /* 662 */,
-/* 663 */,
+/* 663 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ActionTrOutput = exports.ActionOutput = void 0;
+const ghActions = __importStar(__webpack_require__(470));
+class ActionOutput {
+    constructor(name) {
+        this._name = name;
+    }
+    getName() {
+        return this._name;
+    }
+    getValue() {
+        return this._value;
+    }
+    setValue(value) {
+        this._value = value;
+        ghActions.setOutput(this._name, value);
+    }
+}
+exports.ActionOutput = ActionOutput;
+class ActionTrOutput {
+    constructor(name, transform) {
+        this._name = name;
+        this._transform = transform;
+    }
+    getName() {
+        return this._name;
+    }
+    getValue() {
+        return this._value;
+    }
+    setValue(value) {
+        this._value = value;
+        this._stringValue = this._transform(value);
+        ghActions.setOutput(this._name, this._stringValue);
+    }
+    getStringValue() {
+        return this._stringValue;
+    }
+}
+exports.ActionTrOutput = ActionTrOutput;
+//# sourceMappingURL=actionOutput.js.map
+
+/***/ }),
 /* 664 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -58002,7 +58050,7 @@ module.exports = jsonfile
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.actionOutputs = void 0;
-const github_actions_utils_1 = __webpack_require__(124);
+const github_actions_utils_1 = __webpack_require__(690);
 exports.actionOutputs = {
     extensionName: new github_actions_utils_1.ActionOutput('extensionName'),
     extensionVersion: new github_actions_utils_1.ActionOutput('extensionVersion'),
@@ -58649,7 +58697,29 @@ try {
 
 
 /***/ }),
-/* 690 */,
+/* 690 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(__webpack_require__(1), exports);
+__exportStar(__webpack_require__(663), exports);
+__exportStar(__webpack_require__(661), exports);
+__exportStar(__webpack_require__(658), exports);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
 /* 691 */,
 /* 692 */,
 /* 693 */,
@@ -70445,59 +70515,6 @@ module.exports = function name(fn) {
 /******/ 				get: function() { return module.i; }
 /******/ 			});
 /******/ 			return module;
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	!function() {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = function(exports) {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getter */
-/******/ 	!function() {
-/******/ 		// define getter function for harmony exports
-/******/ 		var hasOwnProperty = Object.prototype.hasOwnProperty;
-/******/ 		__webpack_require__.d = function(exports, name, getter) {
-/******/ 			if(!hasOwnProperty.call(exports, name)) {
-/******/ 				Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 			}
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/create fake namespace object */
-/******/ 	!function() {
-/******/ 		// create a fake namespace object
-/******/ 		// mode & 1: value is a module id, require it
-/******/ 		// mode & 2: merge all properties of value into the ns
-/******/ 		// mode & 4: return value when already ns object
-/******/ 		// mode & 8|1: behave like require
-/******/ 		__webpack_require__.t = function(value, mode) {
-/******/ 			if(mode & 1) value = this(value);
-/******/ 			if(mode & 8) return value;
-/******/ 			if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 			var ns = Object.create(null);
-/******/ 			__webpack_require__.r(ns);
-/******/ 			Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 			if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 			return ns;
-/******/ 		};
-/******/ 	}();
-/******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	!function() {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = function(module) {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				function getDefault() { return module['default']; } :
-/******/ 				function getModuleExports() { return module; };
-/******/ 			__webpack_require__.d(getter, 'a', getter);
-/******/ 			return getter;
 /******/ 		};
 /******/ 	}();
 /******/ 	
