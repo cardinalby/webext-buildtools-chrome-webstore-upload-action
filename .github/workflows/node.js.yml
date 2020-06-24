@@ -7,7 +7,7 @@ on: # rebuild any PRs and main branch changes
       - 'releases/*'
 
 jobs:
-  build: # make sure build/ci work properly
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,3 +24,5 @@ jobs:
         run: npm run build
       - name: Pack
         run: npm run pack
+      - name: Check pack is up-to-date
+        run: npm run checkPackCommited
