@@ -3,9 +3,9 @@
 # Deploy your WebExtension to Chrome Web Store
 
 The action allows you to:
-* pack and upload your extension to Chrome Web Store
-* perform publishing
-* download back published crx file
+* Pack and upload your extension to Chrome Web Store.
+* Perform publishing.
+* Download back published crx file.
 
 Based on [ChromeWebstoreBuilder](https://www.npmjs.com/package/webext-buildtools-chrome-webstore-builder) and 
 [DirReaderBuilder](https://www.npmjs.com/package/webext-buildtools-dir-reader-mw) packages.
