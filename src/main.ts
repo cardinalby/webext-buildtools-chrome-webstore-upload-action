@@ -115,7 +115,7 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
             }
         };
     } else if (
-        !haveTheSameIsSetStatus(actionInputs.waitForUploadCheckIntervalMs, actionInputs.waitForUploadCheckCount)
+        !haveTheSameSetStatus(actionInputs.waitForUploadCheckIntervalMs, actionInputs.waitForUploadCheckCount)
     ) {
         logger('warn', 'waitForUploadCheckIntervalMs and waitForUploadCheckCount inputs should be set together');
     }
@@ -143,7 +143,7 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
                 os: actionInputs.downloadCrxPlatformOs,
                 naclArch: actionInputs.downloadCrxPlatformNaclArch
             }
-        } else if (!haveTheSameIsSetStatus(
+        } else if (!haveTheSameSetStatus(
             actionInputs.downloadCrxPlatformArch,
             actionInputs.downloadCrxPlatformOs,
             actionInputs.downloadCrxPlatformNaclArch
@@ -157,7 +157,7 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
     return options;
 }
 
-function haveTheSameIsSetStatus(...values: any): boolean {
+function haveTheSameSetStatus(...values: any): boolean {
     if (values.length === 0) {
         return true;
     }
