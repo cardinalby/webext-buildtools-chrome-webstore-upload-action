@@ -24,5 +24,10 @@ jobs:
         run: npm run build
       - name: Pack
         run: npm run pack
-      - name: Check pack is up-to-date
-        run: npm run checkPackCommited
+      - uses: EndBug/add-and-commit@v4
+        with:
+          add: 'dist/index.js'
+          message: 'Update dist/index.js'
+          tag: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
