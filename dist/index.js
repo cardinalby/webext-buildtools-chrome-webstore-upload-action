@@ -9065,7 +9065,7 @@ function getChromeWebstoreOptions(logger) {
             }
         };
     }
-    else if (!haveTheSameSetStatus(actionInputs_1.actionInputs.waitForUploadCheckIntervalMs, actionInputs_1.actionInputs.waitForUploadCheckCount)) {
+    else if (!haveTheSameStatus(actionInputs_1.actionInputs.waitForUploadCheckIntervalMs, actionInputs_1.actionInputs.waitForUploadCheckCount)) {
         logger('warn', 'waitForUploadCheckIntervalMs and waitForUploadCheckCount inputs should be set together');
     }
     if (actionInputs_1.actionInputs.doPublish) {
@@ -9090,14 +9090,14 @@ function getChromeWebstoreOptions(logger) {
                 naclArch: actionInputs_1.actionInputs.downloadCrxPlatformNaclArch
             };
         }
-        else if (!haveTheSameSetStatus(actionInputs_1.actionInputs.downloadCrxPlatformArch, actionInputs_1.actionInputs.downloadCrxPlatformOs, actionInputs_1.actionInputs.downloadCrxPlatformNaclArch)) {
+        else if (!haveTheSameStatus(actionInputs_1.actionInputs.downloadCrxPlatformArch, actionInputs_1.actionInputs.downloadCrxPlatformOs, actionInputs_1.actionInputs.downloadCrxPlatformNaclArch)) {
             logger('warn', 'downloadCrxPlatformArch, downloadCrxPlatformOs, downloadCrxPlatformNaclArch' +
                 'inputs should be set together');
         }
     }
     return options;
 }
-function haveTheSameSetStatus(...values) {
+function haveTheSameStatus(...values) {
     if (values.length === 0) {
         return true;
     }
