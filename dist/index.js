@@ -31483,7 +31483,7 @@ class OptionsValidator {
         res.warnings.forEach(warning => logWrapper.warn(warning));
         if (res.missedFields.length > 0) {
             const fields = res.missedFields.join(', ');
-            throw new Error(`Following options fields are not set o have invalid value: ${fields}`);
+            throw new Error(`Following options fields are not set or have invalid value: ${fields}`);
         }
     }
     validateImpl(options) {
@@ -31519,6 +31519,7 @@ class OptionsValidator {
             r.missedFields.push(...missed);
         }
         if (options.publish &&
+            options.publish.allowedStatuses !== undefined &&
             (!Array.isArray(options.publish.allowedStatuses) || options.publish.allowedStatuses.length === 0)) {
             r.missedFields.push(`publish.allowedPublishStatuses`);
         }
@@ -61537,7 +61538,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const webstoreApi = __webpack_require__(301);
 // noinspection TypeScriptPreferShortImport
 const buildResult_1 = __webpack_require__(775);
-function validatePublishStatus(statuses, allowedStatuses = [webstoreApi.PublishStatus.OK, webstoreApi.PublishStatus.ITEM_PENDING_REVIEW]) {
+function validatePublishStatus(statuses, allowedStatuses) {
     const restrictedStatuses = statuses.filter(status => !allowedStatuses.includes(status));
     if (restrictedStatuses.length > 0) {
         throw new Error(`Publish statuses ${restrictedStatuses.join(', ')} are not allowed`);
@@ -61562,8 +61563,10 @@ async function publishExt(extensionId, options, logWrapper, apiFacade, extension
             throw error;
         }
     }
+    const allowedStatuses = options.allowedStatuses ||
+        [webstoreApi.PublishStatus.OK, webstoreApi.PublishStatus.ITEM_PENDING_REVIEW];
     if (publishResult && Array.isArray(publishResult.status)) {
-        validatePublishStatus(publishResult.status, options.allowedStatuses);
+        validatePublishStatus(publishResult.status, allowedStatuses);
     }
     return new buildResult_1.ChromeWebstorePublishedExtAsset({
         extId: extensionId,
