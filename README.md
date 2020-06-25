@@ -54,6 +54,7 @@ Include files according to the pattern while packing crx.
 Patterns of files which will be excluded from the zip, separated by `|`. 
 
 ## Outputs
+
 * `extensionName` from extension's manifest
 * `extensionVersion` from extension's manifest 
 * `crxFilePath` the absolute path to the downloaded crx file (if was)
