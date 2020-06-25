@@ -1,4 +1,4 @@
-name: "pack-js"
+name: "pack-js-major-release"
 on:
   push:
     tags:
