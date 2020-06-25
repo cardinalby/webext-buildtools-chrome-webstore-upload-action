@@ -72,6 +72,15 @@ with:
   extensionId: 'fonhjbpoimjmgfgbboichngpjlmilbmk'
   apiClientId: ${{ secrets.G_CLIENT_ID }}
   apiClientSecret: ${{ secrets.G_CLIENT_SECRET }}
-  apiRefreshToken: ${{ secrets.G_CLIENT_TOKEN }}
+  apiRefreshToken: ${{ secrets.G_REFRESH_TOKEN }}
   downloadCrxFilePath: 'build/extension.published.crx'
 ```
+
+## Google refresh token expiration
+
+According to [Google's guide](https://developers.google.com/identity/protocols/oauth2#expiration), 
+the refresh token might **stop working** if it has not been used for **six months**. 
+
+To avoid that, schedule
+[google-api-fetch-token-action](https://github.com/cardinalby/google-api-fetch-token-action) action 
+with the same credentials.

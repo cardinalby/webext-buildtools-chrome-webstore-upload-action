@@ -1,6 +1,6 @@
 {
   "name": "webext-buildtools-chrome-webstore-action",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": false,
   "description": "Deploy your WebExtension to Chrome Web Store",
   "main": "lib/main.js",
@@ -33,7 +33,7 @@
     "@actions/core": "^1.2.0",
     "github-actions-utils": "^1.0.7",
     "webext-buildtools-dir-reader-mw": "^1.0.9",
-    "webext-buildtools-chrome-webstore-builder": "^1.0.7",
+    "webext-buildtools-chrome-webstore-builder": "^1.0.8",
     "winston": "^3.2.1"
   },
   "devDependencies": {
