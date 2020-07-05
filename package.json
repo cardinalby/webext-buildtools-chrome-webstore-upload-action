@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cardinalby/webext-buildtools-chrome-webstore-action.git"
+    "url": "git+https://github.com/cardinalby/webext-buildtools-chrome-webstore-upload-action.git"
   },
   "keywords": [
     "webext-buildtools",
