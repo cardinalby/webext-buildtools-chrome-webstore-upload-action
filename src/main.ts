@@ -1,17 +1,13 @@
 import * as ghActions from '@actions/core';
 import ChromeCrxBuilder, {
-    ChromeWebstoreBuildResult,
-    IChromeWebstoreOptions
+    IChromeWebstoreOptions,
+    IChromeWebstoreUploadOptions
 } from 'webext-buildtools-chrome-webstore-builder';
-import DirReaderBuilder, {
-    DirReaderBuildResult,
-    IManifestObject,
-    IDirReaderOptions
-} from 'webext-buildtools-dir-reader-mw';
 import { LogMethod } from 'winston';
 import { actionInputs } from './actionInputs';
 import { getLogger } from './logger';
 import { actionOutputs } from './actionOutputs';
+import fs from "fs";
 
 async function run(): Promise<void> {
     try {
@@ -23,77 +19,25 @@ async function run(): Promise<void> {
 
 async function runImpl() {
     const logger = getLogger();
-    const dirReaderAssets = (await runDirBuilder(logger)).getAssets();
-    if (!dirReaderAssets.zipBuffer || !dirReaderAssets.manifest) {
-        throw new Error('Dir reader assets are empty');
-    }
-    actionOutputs.extensionName.setValue(dirReaderAssets.manifest.getValue().name);
-    actionOutputs.extensionVersion.setValue(dirReaderAssets.manifest.getValue().version);
 
-    const webstoreResult = await runWebstoreBuilder(
-        logger,
-        dirReaderAssets.zipBuffer.getValue(),
-        dirReaderAssets.manifest.getValue()
-    );
+    const options = getChromeWebstoreOptions(logger);
+    const chromeWebstoreBuilder = new ChromeCrxBuilder(options, logger);
+
+    chromeWebstoreBuilder.setInputZipBuffer(fs.readFileSync(actionInputs.zipFilePath));
+    chromeWebstoreBuilder.requireUploadedExt();
+    const webstoreResult = await chromeWebstoreBuilder.build();
 
     const uploadedExtAsset = webstoreResult.getAssets().uploadedExt;
     if (uploadedExtAsset) {
-        const apiResource = uploadedExtAsset.getValue().apiResource;
-        if (apiResource) {
-            actionOutputs.uploadState.setValue(apiResource.uploadState);
+        const oldResource = uploadedExtAsset.getValue().oldVersion;
+        if (oldResource.crxVersion) {
+            actionOutputs.oldVersion.setValue(oldResource.crxVersion);
+        }
+        const newResource = uploadedExtAsset.getValue().newVersion;
+        if (newResource && newResource.crxVersion) {
+            actionOutputs.newVersion.setValue(newResource.crxVersion);
         }
     }
-
-    const publishedExtAsset = webstoreResult.getAssets().publishedExt;
-    if (publishedExtAsset) {
-        actionOutputs.publishedWith500Error.setValue(publishedExtAsset.getValue().error500);
-        const publishResponse = publishedExtAsset.getValue().publishResponse;
-        if (publishResponse) {
-            actionOutputs.publishStatus.setValue(publishResponse.status);
-        }
-    }
-
-    const crxFileAsset = webstoreResult.getAssets().publishedCrxFile;
-    if (crxFileAsset) {
-        actionOutputs.crxFilePath.setValue(crxFileAsset.getValue());
-    }
-}
-
-async function runDirBuilder(logger: LogMethod): Promise<DirReaderBuildResult> {
-    const options: IDirReaderOptions = {
-        zipOptions: {
-            globPattern: actionInputs.zipGlobPattern,
-            ignore: actionInputs.zipIgnore
-        }
-    };
-    const dirBuilder = new DirReaderBuilder(options, logger);
-    dirBuilder.setInputDirPath(actionInputs.extensionDir);
-    dirBuilder.requireZipBuffer();
-    dirBuilder.requireManifest();
-    return dirBuilder.build();
-}
-
-async function runWebstoreBuilder(
-    logger: LogMethod,
-    zipBuffer: Buffer,
-    manifest: IManifestObject
-): Promise<ChromeWebstoreBuildResult> {
-
-    const options = getChromeWebstoreOptions(logger);
-    ghActions.info('Publishing ' + manifest.name + ' v.' + manifest.version);
-    const chromeWebstoreBuilder = new ChromeCrxBuilder(options, logger);
-
-    chromeWebstoreBuilder.setInputManifest(manifest);
-    chromeWebstoreBuilder.setInputZipBuffer(zipBuffer);
-
-    chromeWebstoreBuilder.requireUploadedExt();
-    if (actionInputs.doPublish) {
-        chromeWebstoreBuilder.requirePublishedExt();
-        if (actionInputs.downloadCrxFilePath) {
-            chromeWebstoreBuilder.requirePublishedCrxFile(false);
-        }
-    }
-    return chromeWebstoreBuilder.build();
 }
 
 function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
@@ -105,14 +49,15 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
             refreshToken: actionInputs.apiRefreshToken
         }
     };
+    const uploadOptions: IChromeWebstoreUploadOptions = {
+        throwIfVersionAlreadyUploaded: actionInputs.errorIfAlreadyUploaded
+    };
 
     if (actionInputs.waitForUploadCheckCount && actionInputs.waitForUploadCheckIntervalMs)
     {
-        options.upload = {
-            waitForSuccess: {
-                checkCount: actionInputs.waitForUploadCheckCount,
-                checkIntervalMs: actionInputs.waitForUploadCheckIntervalMs
-            }
+        uploadOptions.waitForSuccess = {
+            checkCount: actionInputs.waitForUploadCheckCount,
+            checkIntervalMs: actionInputs.waitForUploadCheckIntervalMs
         };
     } else if (
         !haveTheSameStatus(actionInputs.waitForUploadCheckIntervalMs, actionInputs.waitForUploadCheckCount)
@@ -120,39 +65,7 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
         logger('warn', 'waitForUploadCheckIntervalMs and waitForUploadCheckCount inputs should be set together');
     }
 
-    if (actionInputs.doPublish) {
-        options.publish = {
-            target: actionInputs.publishTarget,
-            ignore500Error: actionInputs.publishIgnore500Error
-        };
-    }
-
-    if (actionInputs.downloadCrxFilePath) {
-        if (!actionInputs.doPublish) {
-            logger('warn', 'downloadCrxFilePath input is set, but doPublish is false');
-        }
-        options.downloadCrx = {
-            outCrxFilePath: actionInputs.downloadCrxFilePath
-        };
-        if (actionInputs.downloadCrxPlatformArch &&
-            actionInputs.downloadCrxPlatformOs &&
-            actionInputs.downloadCrxPlatformNaclArch
-        ) {
-            options.downloadCrx.platform = {
-                arch: actionInputs.downloadCrxPlatformArch,
-                os: actionInputs.downloadCrxPlatformOs,
-                naclArch: actionInputs.downloadCrxPlatformNaclArch
-            }
-        } else if (!haveTheSameStatus(
-            actionInputs.downloadCrxPlatformArch,
-            actionInputs.downloadCrxPlatformOs,
-            actionInputs.downloadCrxPlatformNaclArch
-        )) {
-            logger('warn', 'downloadCrxPlatformArch, downloadCrxPlatformOs, downloadCrxPlatformNaclArch' +
-                'inputs should be set together'
-            );
-        }
-    }
+    options.upload = uploadOptions;
 
     return options;
 }
