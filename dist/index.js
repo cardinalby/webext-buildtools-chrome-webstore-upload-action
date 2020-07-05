@@ -8619,13 +8619,21 @@ class ChromeWebstoreBuilder extends webext_buildtools_utils_1.AbstractSimpleBuil
         }
         let oldExtensionResource;
         let newExtensionResource;
-        if ((this._uploadedExtRequired || this._publishedExtRequired) && this._options.apiAccess) {
+        if (this._uploadedExtRequired || this._publishedExtRequired) {
             let apiFacade;
-            try {
-                apiFacade = await chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade.authorize(this._options.apiAccess.clientId, this._options.apiAccess.clientSecret, this._options.apiAccess.refreshToken, this._options.extensionId);
+            if (this._options.accessToken) {
+                apiFacade = new chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade(this._options.accessToken, this._options.extensionId);
             }
-            catch (error) {
-                throw new Error(error.message + ': ' + JSON.stringify(error.response.data));
+            else if (this._options.apiAccess) {
+                try {
+                    apiFacade = await chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade.authorize(this._options.apiAccess.clientId, this._options.apiAccess.clientSecret, this._options.apiAccess.refreshToken, this._options.extensionId);
+                }
+                catch (error) {
+                    throw new Error(error.message + ': ' + JSON.stringify(error.response.data));
+                }
+            }
+            else {
+                throw new Error('Neither accessToken or apiAccess options are set');
             }
             apiFacade.setLogMethod(this._logWrapper.logMethod);
             if (this._uploadedExtRequired) {
@@ -8907,12 +8915,21 @@ function runImpl() {
 function getChromeWebstoreOptions(logger) {
     const options = {
         extensionId: actionInputs_1.actionInputs.extensionId,
-        apiAccess: {
+    };
+    if (actionInputs_1.actionInputs.apiAccessToken) {
+        options.accessToken = actionInputs_1.actionInputs.apiAccessToken;
+    }
+    else if (actionInputs_1.actionInputs.apiClientId && actionInputs_1.actionInputs.apiClientSecret && actionInputs_1.actionInputs.apiRefreshToken) {
+        options.apiAccess = {
             clientId: actionInputs_1.actionInputs.apiClientId,
             clientSecret: actionInputs_1.actionInputs.apiClientSecret,
             refreshToken: actionInputs_1.actionInputs.apiRefreshToken
-        }
-    };
+        };
+    }
+    else {
+        throw new Error('Api access inputs not set. You should set either apiAccessToken directly or ' +
+            'apiClientId, apiClientSecret, apiRefreshToken (to obtain access token)');
+    }
     const uploadOptions = {
         throwIfVersionAlreadyUploaded: actionInputs_1.actionInputs.errorIfAlreadyUploaded
     };
@@ -24537,8 +24554,8 @@ class OptionsValidator {
             r.missedFields.push('extensionId');
         }
         if (this._uploadedExtRequired || this._publishedExtRequired) {
-            if (!options.apiAccess) {
-                r.missedFields.push('apiAccess');
+            if (options.accessToken && !options.apiAccess) {
+                r.missedFields.push('apiAccess or accessToken');
             }
             else {
                 const missed = ['clientId', 'clientSecret', 'refreshToken']
@@ -28988,9 +29005,10 @@ const github_actions_utils_1 = __webpack_require__(690);
 exports.actionInputs = {
     zipFilePath: github_actions_utils_1.actionInputs.getWsPath('zipFilePath', true),
     extensionId: github_actions_utils_1.actionInputs.getString('extensionId', true),
-    apiClientId: github_actions_utils_1.actionInputs.getString('apiClientId', true, true),
-    apiClientSecret: github_actions_utils_1.actionInputs.getString('apiClientSecret', true, true),
-    apiRefreshToken: github_actions_utils_1.actionInputs.getString('apiRefreshToken', true, true),
+    apiAccessToken: github_actions_utils_1.actionInputs.getString('apiAccessToken', false, true),
+    apiClientId: github_actions_utils_1.actionInputs.getString('apiClientId', false, true),
+    apiClientSecret: github_actions_utils_1.actionInputs.getString('apiClientSecret', false, true),
+    apiRefreshToken: github_actions_utils_1.actionInputs.getString('apiRefreshToken', false, true),
     errorIfAlreadyUploaded: github_actions_utils_1.actionInputs.getBool('errorIfAlreadyUploaded', false),
     waitForUploadCheckCount: github_actions_utils_1.actionInputs.getInt('waitForUploadCheckCount', false),
     waitForUploadCheckIntervalMs: github_actions_utils_1.actionInputs.getInt('waitForUploadCheckIntervalMs', false)
