@@ -8,15 +8,18 @@ inputs:
   extensionId:
     description: 'Your extension id in Chrome Web Store'
     required: true
+  apiAccessToken:
+    description: 'Google API access token obtained by yourself'
+    required: false
   apiClientId:
-    description: 'Web Store API Client Id (use secrets!)'
-    required: true
+    description: 'Web Store API Client Id (use secrets!) required to obtain access token'
+    required: false
   apiClientSecret:
-    description: 'Web Store API Client Secret (use secrets!)'
-    required: true
+    description: 'Web Store API Client Secret (use secrets!) required to obtain access token'
+    required: false
   apiRefreshToken:
-    description: 'Web Store API Refresh token (use secrets!)'
-    required: true
+    description: 'Web Store API Refresh token (use secrets!) required to obtain access token'
+    required: false
   errorIfAlreadyUploaded:
     description: 'Finish with error if the same version is already uploaded'
     required: false

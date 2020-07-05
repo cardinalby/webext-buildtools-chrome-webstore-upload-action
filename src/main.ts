@@ -43,12 +43,21 @@ async function runImpl() {
 function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
     const options: IChromeWebstoreOptions = {
         extensionId: actionInputs.extensionId,
-        apiAccess: {
+    };
+    if (actionInputs.apiAccessToken) {
+        options.accessToken = actionInputs.apiAccessToken;
+    } else if (actionInputs.apiClientId && actionInputs.apiClientSecret && actionInputs.apiRefreshToken) {
+        options.apiAccess = {
             clientId: actionInputs.apiClientId,
             clientSecret: actionInputs.apiClientSecret,
             refreshToken: actionInputs.apiRefreshToken
-        }
-    };
+        };
+    } else {
+        throw new Error(
+            'Api access inputs not set. You should set either apiAccessToken directly or ' +
+            'apiClientId, apiClientSecret, apiRefreshToken (to obtain access token)'
+        )
+    }
     const uploadOptions: IChromeWebstoreUploadOptions = {
         throwIfVersionAlreadyUploaded: actionInputs.errorIfAlreadyUploaded
     };

@@ -17,14 +17,19 @@ Path to packed extension (relative to repository)
 * `extensionId` **Required**<br>
 Your extension id in Chrome Web Store
 
-* The following inputs allows action to access Chrome Webstore API. You should store them as secrets.
-Read 
-[Using the Chrome Web Store Publish API](https://developer.chrome.com/webstore/using_webstore_api), 
-[How to generate Google API keys](https://github.com/DrewML/chrome-webstore-upload/blob/master/How%20to%20generate%20Google%20API%20keys.md)
-to learn how to obtain these values.
-    * `apiClientId` **Required**
-    * `apiClientSecret` **Required**
-    * `apiRefreshToken` **Required** 
+* To allow action accessing to Chrome Webstore API you can choose 2 ways:
+    1. Set `apiAccessToken` input directly (you can obtain it using 
+    [google-api-fetch-token-action](https://github.com/cardinalby/google-api-fetch-token-action)) 
+
+    2. Set the following inputs to let action get access token for you. Read 
+    [Using the Chrome Web Store Publish API](https://developer.chrome.com/webstore/using_webstore_api), 
+    [How to generate Google API keys](https://github.com/DrewML/chrome-webstore-upload/blob/master/How%20to%20generate%20Google%20API%20keys.md)
+    to learn how to obtain these values.
+        * `apiClientId` **Required**
+        * `apiClientSecret` **Required**
+        * `apiRefreshToken` **Required** 
+
+    Don't forget to store sensitive data as secrets.
 
 * `errorIfAlreadyUploaded` Default: `true`<br>
 Finish with error if the same version is already uploaded.
