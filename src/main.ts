@@ -1,7 +1,11 @@
 import * as ghActions from '@actions/core';
 import ChromeCrxBuilder, {
     IChromeWebstoreOptions,
-    IChromeWebstoreUploadOptions
+    ChromeWebstoreBuildResult,
+    IChromeWebstoreUploadOptions,
+    NewerVersionAlreadyUploadedError,
+    SameVersionAlreadyUploadedError,
+    UploadInReviewError
 } from 'webext-buildtools-chrome-webstore-builder';
 import { LogMethod } from 'winston';
 import { actionInputs } from './actionInputs';
@@ -18,6 +22,10 @@ async function run(): Promise<void> {
 }
 
 async function runImpl() {
+    actionOutputs.newerVersionAlreadyUploadedError.setValue(false);
+    actionOutputs.sameVersionAlreadyUploadedError.setValue(false);
+    actionOutputs.inReviewError.setValue(false);
+
     const logger = getLogger();
 
     const options = getChromeWebstoreOptions(logger);
@@ -25,19 +33,38 @@ async function runImpl() {
 
     chromeWebstoreBuilder.setInputZipBuffer(fs.readFileSync(actionInputs.zipFilePath));
     chromeWebstoreBuilder.requireUploadedExt();
-    const webstoreResult = await chromeWebstoreBuilder.build();
 
-    const uploadedExtAsset = webstoreResult.getAssets().uploadedExt;
-    if (uploadedExtAsset) {
-        const oldResource = uploadedExtAsset.getValue().oldVersion;
-        if (oldResource.crxVersion) {
-            actionOutputs.oldVersion.setValue(oldResource.crxVersion);
+    let webstoreResult: ChromeWebstoreBuildResult|undefined;
+    try {
+        webstoreResult = await chromeWebstoreBuilder.build();
+    } catch (err) {
+        if (err instanceof NewerVersionAlreadyUploadedError) {
+            actionOutputs.newerVersionAlreadyUploadedError.setValue(true);
+            actionOutputs.oldVersion.setValue(err.currentVersion);
+        } else if (err instanceof SameVersionAlreadyUploadedError) {
+            actionOutputs.sameVersionAlreadyUploadedError.setValue(true);
+            actionOutputs.oldVersion.setValue(err.version);
+        } else if (err instanceof UploadInReviewError) {
+            actionOutputs.inReviewError.setValue(true);
+            if (err.currentVersion !== undefined) {
+                actionOutputs.oldVersion.setValue(err.currentVersion);
+            }
         }
-        const newResource = uploadedExtAsset.getValue().newVersion;
-        if (newResource && newResource.crxVersion) {
-            actionOutputs.newVersion.setValue(newResource.crxVersion);
-        }
+        throw err;
     }
+    const uploadedExtAsset = webstoreResult.getAssets().uploadedExt;
+    if (!uploadedExtAsset) {
+        throw new Error('uploadedExt asset not found in result');
+    }
+    const oldResource = uploadedExtAsset.getValue().oldVersion;
+    if (oldResource.crxVersion) {
+        actionOutputs.oldVersion.setValue(oldResource.crxVersion);
+    }
+    const newResource = uploadedExtAsset.getValue().newVersion;
+    if (newResource && newResource.crxVersion) {
+        actionOutputs.newVersion.setValue(newResource.crxVersion);
+    }
+
 }
 
 function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
@@ -59,7 +86,7 @@ function getChromeWebstoreOptions(logger: LogMethod): IChromeWebstoreOptions {
         )
     }
     const uploadOptions: IChromeWebstoreUploadOptions = {
-        throwIfVersionAlreadyUploaded: actionInputs.errorIfAlreadyUploaded
+        throwIfVersionAlreadyUploaded: true
     };
 
     if (actionInputs.waitForUploadCheckCount && actionInputs.waitForUploadCheckIntervalMs)

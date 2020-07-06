@@ -20,10 +20,6 @@ inputs:
   apiRefreshToken:
     description: 'Web Store API Refresh token (use secrets!) required to obtain access token'
     required: false
-  errorIfAlreadyUploaded:
-    description: 'Finish with error if the same version is already uploaded'
-    required: false
-    default: 'true'
   waitForUploadCheckCount:
     description: 'Checks count in case of upload finished with IN_PROGRESS status'
     required: false
@@ -35,6 +31,12 @@ outputs:
     description: 'Version of extension before uploading'
   newVersion:
     description: 'Version of extension after uploading (if was uploaded)'
+  newerVersionAlreadyUploadedError:
+    description: '`true` if failed because newer extension version is already uploaded'
+  sameVersionAlreadyUploadedError:
+    description: '`true` if failed because same extension version is already uploaded'
+  inReviewError:
+    description: '`true` if failed because item is currently in review and upload was rejected'
 runs:
   using: 'node12'
   main: 'dist/index.js'

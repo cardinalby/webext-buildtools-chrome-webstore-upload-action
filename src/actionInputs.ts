@@ -9,7 +9,6 @@ export const actionInputs = {
     apiClientSecret: inputs.getString('apiClientSecret', false, true),
     apiRefreshToken: inputs.getString('apiRefreshToken', false, true),
 
-    errorIfAlreadyUploaded: inputs.getBool('errorIfAlreadyUploaded', false),
     waitForUploadCheckCount: inputs.getInt('waitForUploadCheckCount', false),
     waitForUploadCheckIntervalMs: inputs.getInt('waitForUploadCheckIntervalMs', false)
 }

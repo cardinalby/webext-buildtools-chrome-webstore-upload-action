@@ -31,9 +31,6 @@ Your extension id in Chrome Web Store
 
     Don't forget to store sensitive data as secrets.
 
-* `errorIfAlreadyUploaded` Default: `true`<br>
-Finish with error if the same version is already uploaded.
-
 * To handle long item processing (if after upload API returns `IN_PROGRESS` state) 
 optionally you can specify 2 following inputs to check until it has `SUCCESS` state:
     * `waitForUploadCheckCount`<br>
@@ -45,6 +42,14 @@ optionally you can specify 2 following inputs to check until it has `SUCCESS` st
 
 * `oldVersion` Version of extension before uploading
 * `newVersion` Version of extension after uploading (if was uploaded)
+
+
+* `newerVersionAlreadyUploadedError` check if step failed<br>
+`true` if failed because newer extension version is already uploaded
+* `sameVersionAlreadyUploadedError` check if step failed<br>
+`true` if failed because same extension version is already uploaded
+* `inReviewError` check if step failed<br>
+`true` if failed because item is currently in review and upload was rejected
 
 ## Simple usage example
 
