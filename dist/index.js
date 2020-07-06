@@ -8534,6 +8534,13 @@ module.exports = exports['default'];
 
 Object.defineProperty(exports, "__esModule", { value: true });
 class UploadInReviewError extends Error {
+    constructor(message, currentVersion) {
+        super(message);
+        this._currentVersion = currentVersion;
+    }
+    get currentVersion() {
+        return this._currentVersion;
+    }
 }
 exports.UploadInReviewError = UploadInReviewError;
 //# sourceMappingURL=uploadInReviewError.js.map
@@ -8651,7 +8658,7 @@ class ChromeWebstoreBuilder extends webext_buildtools_utils_1.AbstractSimpleBuil
                 oldExtensionResource = await apiFacade.getCurrentlyUploadedResource();
                 const shouldUpload = validateVersion_1.validateVersion(this._inputManifest.version, oldExtensionResource, throwIfVersionAlreadyUploaded, this._logWrapper);
                 if (shouldUpload) {
-                    newExtensionResource = await upload_1.upload(this._inputZipBuffer, this._options.upload || {}, apiFacade, this._inputManifest);
+                    newExtensionResource = await upload_1.upload(this._inputZipBuffer, this._options.upload || {}, oldExtensionResource.crxVersion, apiFacade, this._inputManifest);
                 }
                 result.getAssets().uploadedExt = new buildResult_1.ChromeWebstoreUploadedExtAsset({
                     oldVersion: oldExtensionResource,
@@ -8876,7 +8883,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ghActions = __importStar(__webpack_require__(470));
-const webext_buildtools_chrome_webstore_builder_1 = __importDefault(__webpack_require__(681));
+const webext_buildtools_chrome_webstore_builder_1 = __importStar(__webpack_require__(681));
 const actionInputs_1 = __webpack_require__(548);
 const logger_1 = __webpack_require__(504);
 const actionOutputs_1 = __webpack_require__(668);
@@ -8893,22 +8900,46 @@ function run() {
 }
 function runImpl() {
     return __awaiter(this, void 0, void 0, function* () {
+        actionOutputs_1.actionOutputs.newerVersionAlreadyUploadedError.setValue(false);
+        actionOutputs_1.actionOutputs.sameVersionAlreadyUploadedError.setValue(false);
+        actionOutputs_1.actionOutputs.inReviewError.setValue(false);
         const logger = logger_1.getLogger();
         const options = getChromeWebstoreOptions(logger);
         const chromeWebstoreBuilder = new webext_buildtools_chrome_webstore_builder_1.default(options, logger);
         chromeWebstoreBuilder.setInputZipBuffer(fs_1.default.readFileSync(actionInputs_1.actionInputs.zipFilePath));
         chromeWebstoreBuilder.requireUploadedExt();
-        const webstoreResult = yield chromeWebstoreBuilder.build();
+        let webstoreResult;
+        try {
+            webstoreResult = yield chromeWebstoreBuilder.build();
+        }
+        catch (err) {
+            if (err instanceof webext_buildtools_chrome_webstore_builder_1.NewerVersionAlreadyUploadedError) {
+                actionOutputs_1.actionOutputs.newerVersionAlreadyUploadedError.setValue(true);
+                actionOutputs_1.actionOutputs.oldVersion.setValue(err.currentVersion);
+            }
+            else if (err instanceof webext_buildtools_chrome_webstore_builder_1.SameVersionAlreadyUploadedError) {
+                actionOutputs_1.actionOutputs.sameVersionAlreadyUploadedError.setValue(true);
+                actionOutputs_1.actionOutputs.oldVersion.setValue(err.version);
+            }
+            else if (err instanceof webext_buildtools_chrome_webstore_builder_1.UploadInReviewError) {
+                actionOutputs_1.actionOutputs.inReviewError.setValue(true);
+                if (err.currentVersion !== undefined) {
+                    actionOutputs_1.actionOutputs.oldVersion.setValue(err.currentVersion);
+                }
+            }
+            throw err;
+        }
         const uploadedExtAsset = webstoreResult.getAssets().uploadedExt;
-        if (uploadedExtAsset) {
-            const oldResource = uploadedExtAsset.getValue().oldVersion;
-            if (oldResource.crxVersion) {
-                actionOutputs_1.actionOutputs.oldVersion.setValue(oldResource.crxVersion);
-            }
-            const newResource = uploadedExtAsset.getValue().newVersion;
-            if (newResource && newResource.crxVersion) {
-                actionOutputs_1.actionOutputs.newVersion.setValue(newResource.crxVersion);
-            }
+        if (!uploadedExtAsset) {
+            throw new Error('uploadedExt asset not found in result');
+        }
+        const oldResource = uploadedExtAsset.getValue().oldVersion;
+        if (oldResource.crxVersion) {
+            actionOutputs_1.actionOutputs.oldVersion.setValue(oldResource.crxVersion);
+        }
+        const newResource = uploadedExtAsset.getValue().newVersion;
+        if (newResource && newResource.crxVersion) {
+            actionOutputs_1.actionOutputs.newVersion.setValue(newResource.crxVersion);
         }
     });
 }
@@ -8931,7 +8962,7 @@ function getChromeWebstoreOptions(logger) {
             'apiClientId, apiClientSecret, apiRefreshToken (to obtain access token)');
     }
     const uploadOptions = {
-        throwIfVersionAlreadyUploaded: actionInputs_1.actionInputs.errorIfAlreadyUploaded
+        throwIfVersionAlreadyUploaded: true
     };
     if (actionInputs_1.actionInputs.waitForUploadCheckCount && actionInputs_1.actionInputs.waitForUploadCheckIntervalMs) {
         uploadOptions.waitForSuccess = {
@@ -29009,7 +29040,6 @@ exports.actionInputs = {
     apiClientId: github_actions_utils_1.actionInputs.getString('apiClientId', false, true),
     apiClientSecret: github_actions_utils_1.actionInputs.getString('apiClientSecret', false, true),
     apiRefreshToken: github_actions_utils_1.actionInputs.getString('apiRefreshToken', false, true),
-    errorIfAlreadyUploaded: github_actions_utils_1.actionInputs.getBool('errorIfAlreadyUploaded', false),
     waitForUploadCheckCount: github_actions_utils_1.actionInputs.getInt('waitForUploadCheckCount', false),
     waitForUploadCheckIntervalMs: github_actions_utils_1.actionInputs.getInt('waitForUploadCheckIntervalMs', false)
 };
@@ -50563,7 +50593,11 @@ if (util && util.inspect && util.inspect.custom) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.actionOutputs = void 0;
 const github_actions_utils_1 = __webpack_require__(690);
+const toBool = (b) => b ? 'true' : 'false';
 exports.actionOutputs = {
+    newerVersionAlreadyUploadedError: new github_actions_utils_1.ActionTrOutput('newerVersionAlreadyUploadedError', toBool),
+    sameVersionAlreadyUploadedError: new github_actions_utils_1.ActionTrOutput('sameVersionAlreadyUploadedError', toBool),
+    inReviewError: new github_actions_utils_1.ActionTrOutput('inReviewError', toBool),
     oldVersion: new github_actions_utils_1.ActionOutput('oldVersion'),
     newVersion: new github_actions_utils_1.ActionOutput('newVersion'),
 };
@@ -59664,7 +59698,7 @@ module.exports = format((info, opts) => {
 Object.defineProperty(exports, "__esModule", { value: true });
 const webstoreApi = __webpack_require__(301);
 const errors_1 = __webpack_require__(740);
-async function upload(inputZipBuffer, options, apiFacade, inputManifest) {
+async function upload(inputZipBuffer, options, currentWebstoreVersion, apiFacade, inputManifest) {
     let uploadResult;
     try {
         uploadResult = await apiFacade.uploadExisting(inputZipBuffer, options.waitForSuccess);
@@ -59684,7 +59718,7 @@ async function upload(inputZipBuffer, options, apiFacade, inputManifest) {
             .join('. ')
         : `Upload has ${uploadResult.uploadState} state`);
     if (uploadResult.isFailedBecauseOfPendingReview()) {
-        throw new errors_1.UploadInReviewError(uploadErrorMsg);
+        throw new errors_1.UploadInReviewError(uploadErrorMsg, currentWebstoreVersion);
     }
     throw new Error(uploadErrorMsg);
 }
