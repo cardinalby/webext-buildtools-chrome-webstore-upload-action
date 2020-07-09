@@ -32,7 +32,7 @@
   "dependencies": {
     "@actions/core": "^1.2.0",
     "github-actions-utils": "^1.0.7",
-    "webext-buildtools-chrome-webstore-builder": "^1.1.7",
+    "webext-buildtools-chrome-webstore-builder": "^1.1.8",
     "winston": "^3.2.1"
   },
   "devDependencies": {
