@@ -24579,7 +24579,7 @@ class OptionsValidator {
             r.missedFields.push('extensionId');
         }
         if (this._uploadedExtRequired || this._publishedExtRequired) {
-            if (options.accessToken && !options.apiAccess) {
+            if (!options.accessToken && !options.apiAccess) {
                 r.missedFields.push('apiAccess or accessToken');
             }
             else {
