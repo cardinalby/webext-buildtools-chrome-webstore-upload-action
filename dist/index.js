@@ -8262,7 +8262,8 @@ class ItemErrorEntry {
         this.error_detail = entry.error_detail;
     }
     isPendingReview() {
-        return this.error_code === 'CLIENT_ERROR' && this.error_detail.toLowerCase().indexOf('pending review') !== -1;
+        return (this.error_code === 'CLIENT_ERROR' || this.error_code === 'ITEM_NOT_UPDATABLE') &&
+            this.error_detail.toLowerCase().indexOf('pending review') !== -1;
     }
 }
 exports.ItemErrorEntry = ItemErrorEntry;
