@@ -56567,10 +56567,19 @@ exports.ChromeWebstoreBuildResult = ChromeWebstoreBuildResult;
 /***/ }),
 
 /***/ 5616:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ChromeWebstoreBuilder = void 0;
 const webext_buildtools_utils_1 = __nccwpck_require__(696);
@@ -56631,76 +56640,78 @@ class ChromeWebstoreBuilder extends webext_buildtools_utils_1.AbstractSimpleBuil
         this._publishedCrxFileRequirement = !!temporary;
         return this;
     }
-    async build() {
-        const optionsValidator = new optionsValidator_1.OptionsValidator(this._uploadedExtRequired, this._publishedExtRequired, this._publishedCrxBufferRequired, this._publishedCrxFileRequirement);
-        optionsValidator.validate(this._options, this._logWrapper);
-        if (this._uploadedExtRequired && !this._inputZipBuffer) {
-            throw Error('Input zip buffer is required to upload extension to WebStore');
-        }
-        const result = new buildResult_1.ChromeWebstoreBuildResult();
-        if (!this._uploadedExtRequired &&
-            !this._publishedExtRequired &&
-            !this._publishedCrxBufferRequired &&
-            this._publishedCrxFileRequirement === undefined) {
-            this._logWrapper.warn('No outputs are required, do nothing');
-            return result;
-        }
-        let oldExtensionResource;
-        let newExtensionResource;
-        if (this._uploadedExtRequired || this._publishedExtRequired) {
-            let apiFacade;
-            if (this._options.accessToken) {
-                apiFacade = new chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade(this._options.accessToken, this._options.extensionId);
+    build() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const optionsValidator = new optionsValidator_1.OptionsValidator(this._uploadedExtRequired, this._publishedExtRequired, this._publishedCrxBufferRequired, this._publishedCrxFileRequirement);
+            optionsValidator.validate(this._options, this._logWrapper);
+            if (this._uploadedExtRequired && !this._inputZipBuffer) {
+                throw Error('Input zip buffer is required to upload extension to WebStore');
             }
-            else if (this._options.apiAccess) {
-                try {
-                    apiFacade = await chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade.authorize(this._options.apiAccess.clientId, this._options.apiAccess.clientSecret, this._options.apiAccess.refreshToken, this._options.extensionId);
+            const result = new buildResult_1.ChromeWebstoreBuildResult();
+            if (!this._uploadedExtRequired &&
+                !this._publishedExtRequired &&
+                !this._publishedCrxBufferRequired &&
+                this._publishedCrxFileRequirement === undefined) {
+                this._logWrapper.warn('No outputs are required, do nothing');
+                return result;
+            }
+            let oldExtensionResource;
+            let newExtensionResource;
+            if (this._uploadedExtRequired || this._publishedExtRequired) {
+                let apiFacade;
+                if (this._options.accessToken) {
+                    apiFacade = new chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade(this._options.accessToken, this._options.extensionId);
                 }
-                catch (error) {
-                    throw new Error(error.message + ': ' + JSON.stringify(error.response.data));
-                }
-            }
-            else {
-                throw new Error('Neither accessToken or apiAccess options are set');
-            }
-            apiFacade.setLogMethod(this._logWrapper.logMethod);
-            if (this._uploadedExtRequired) {
-                if (!this._inputManifest) {
-                    if (!this._inputZipBuffer) {
-                        throw new Error('Input manifest is required upload extension. Neither manifest or zip buffer are set');
+                else if (this._options.apiAccess) {
+                    try {
+                        apiFacade = yield chromeWebstoreApiFacade_1.ChromeWebstoreApiFacade.authorize(this._options.apiAccess.clientId, this._options.apiAccess.clientSecret, this._options.apiAccess.refreshToken, this._options.extensionId);
                     }
-                    this._logWrapper.info('Manifest input is not set, reading from zip...');
-                    this._inputManifest = await webext_buildtools_utils_1.extractManifestFromZipBuffer(this._inputZipBuffer);
-                    this._logWrapper.info(`Manifest extracted. Extension name: '${this._inputManifest.name}', ` +
-                        `version: ${this._inputManifest.version}`);
+                    catch (error) {
+                        throw new Error(error.message + ': ' + JSON.stringify(error.response.data));
+                    }
                 }
-                const throwIfVersionAlreadyUploaded = !(this._options.upload &&
-                    this._options.upload.throwIfVersionAlreadyUploaded === false);
-                oldExtensionResource = await apiFacade.getCurrentlyUploadedResource();
-                const shouldUpload = validateVersion_1.validateVersion(this._inputManifest.version, oldExtensionResource, throwIfVersionAlreadyUploaded, this._logWrapper);
-                if (shouldUpload) {
-                    newExtensionResource = await upload_1.upload(this._inputZipBuffer, this._options.upload || {}, oldExtensionResource.crxVersion, apiFacade, this._inputManifest);
+                else {
+                    throw new Error('Neither accessToken or apiAccess options are set');
                 }
-                result.getAssets().uploadedExt = new buildResult_1.ChromeWebstoreUploadedExtAsset({
-                    oldVersion: oldExtensionResource,
-                    newVersion: newExtensionResource
-                });
+                apiFacade.setLogMethod(this._logWrapper.logMethod);
+                if (this._uploadedExtRequired) {
+                    if (!this._inputManifest) {
+                        if (!this._inputZipBuffer) {
+                            throw new Error('Input manifest is required upload extension. Neither manifest or zip buffer are set');
+                        }
+                        this._logWrapper.info('Manifest input is not set, reading from zip...');
+                        this._inputManifest = yield webext_buildtools_utils_1.extractManifestFromZipBuffer(this._inputZipBuffer);
+                        this._logWrapper.info(`Manifest extracted. Extension name: '${this._inputManifest.name}', ` +
+                            `version: ${this._inputManifest.version}`);
+                    }
+                    const throwIfVersionAlreadyUploaded = !(this._options.upload &&
+                        this._options.upload.throwIfVersionAlreadyUploaded === false);
+                    oldExtensionResource = yield apiFacade.getCurrentlyUploadedResource();
+                    const shouldUpload = validateVersion_1.validateVersion(this._inputManifest.version, oldExtensionResource, throwIfVersionAlreadyUploaded, this._logWrapper);
+                    if (shouldUpload) {
+                        newExtensionResource = yield upload_1.upload(this._inputZipBuffer, this._options.upload || {}, oldExtensionResource.crxVersion, apiFacade, this._inputManifest);
+                    }
+                    result.getAssets().uploadedExt = new buildResult_1.ChromeWebstoreUploadedExtAsset({
+                        oldVersion: oldExtensionResource,
+                        newVersion: newExtensionResource
+                    });
+                }
+                if (this._publishedExtRequired) {
+                    let versionToPublish;
+                    if (newExtensionResource && newExtensionResource.crxVersion) {
+                        versionToPublish = newExtensionResource.crxVersion;
+                    }
+                    else if (oldExtensionResource && oldExtensionResource.crxVersion) {
+                        versionToPublish = oldExtensionResource.crxVersion;
+                    }
+                    result.getAssets().publishedExt = yield publish_1.publishExt(this._options.extensionId, this._options.publish || {}, this._logWrapper, apiFacade, versionToPublish);
+                }
             }
-            if (this._publishedExtRequired) {
-                let versionToPublish;
-                if (newExtensionResource && newExtensionResource.crxVersion) {
-                    versionToPublish = newExtensionResource.crxVersion;
-                }
-                else if (oldExtensionResource && oldExtensionResource.crxVersion) {
-                    versionToPublish = oldExtensionResource.crxVersion;
-                }
-                result.getAssets().publishedExt = await publish_1.publishExt(this._options.extensionId, this._options.publish || {}, this._logWrapper, apiFacade, versionToPublish);
+            if (this._publishedCrxBufferRequired || this._publishedCrxFileRequirement !== undefined) {
+                yield downloadCrx_1.downloadCrx(this._options.extensionId, this._publishedCrxBufferRequired, this._publishedCrxFileRequirement, this._options.downloadCrx || {}, result, this._logWrapper);
             }
-        }
-        if (this._publishedCrxBufferRequired || this._publishedCrxFileRequirement !== undefined) {
-            await downloadCrx_1.downloadCrx(this._options.extensionId, this._publishedCrxBufferRequired, this._publishedCrxFileRequirement, this._options.downloadCrx || {}, result, this._logWrapper);
-        }
-        return Promise.resolve(result);
+            return Promise.resolve(result);
+        });
     }
 }
 exports.ChromeWebstoreBuilder = ChromeWebstoreBuilder;
@@ -56710,10 +56721,19 @@ ChromeWebstoreBuilder.TARGET_NAME = 'chrome-webstore-deploy';
 /***/ }),
 
 /***/ 6587:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.downloadCrx = void 0;
 const typed_chrome_webstore_api_1 = __nccwpck_require__(6137);
@@ -56727,29 +56747,31 @@ function writeAndCreateFileAsset(stream, temporary, tmpDirPrefix, tmpFileName, p
     }
     throw new Error('invalid arguments');
 }
-async function downloadCrx(extensionId, requireBuffer, fileRequirement, // true: temp, false: persistent
+function downloadCrx(extensionId, requireBuffer, fileRequirement, // true: temp, false: persistent
 options, result, logWrapper) {
-    logWrapper.info(`Downloading crx file for '${extensionId}' extension...`);
-    const downloadCrxApi = typed_chrome_webstore_api_1.DownloadCrx.downloadCrx;
-    const readStream = await downloadCrxApi(extensionId, options.prodVersion, options.acceptFormat, options.platform);
-    const waitFor = [];
-    if (requireBuffer) {
-        const bufferCreating = webext_buildtools_utils_1.BufferBuildAsset.createFromStream(readStream);
-        waitFor.push(bufferCreating
-            .then(asset => result.getAssets().publishedCrxBuffer = asset)
-            .catch(err => logWrapper.error(`Writing to buffer failed: ${err.toString()}`)));
-    }
-    if (fileRequirement !== undefined) {
-        const fileCreating = writeAndCreateFileAsset(readStream, fileRequirement, 'published_crx', extensionId + '.crx', options.outCrxFilePath);
-        waitFor.push(fileCreating
-            .then(asset => result.getAssets().publishedCrxFile = asset)
-            .catch(err => logWrapper.error(`Writing to file failed: ${err.toString()}`)));
-    }
-    return Promise
-        .all(waitFor)
-        .then(() => {
-        logWrapper.info(`Downloaded`);
-        return result;
+    return __awaiter(this, void 0, void 0, function* () {
+        logWrapper.info(`Downloading crx file for '${extensionId}' extension...`);
+        const downloadCrxApi = typed_chrome_webstore_api_1.DownloadCrx.downloadCrx;
+        const readStream = yield downloadCrxApi(extensionId, options.prodVersion, options.acceptFormat, options.platform);
+        const waitFor = [];
+        if (requireBuffer) {
+            const bufferCreating = webext_buildtools_utils_1.BufferBuildAsset.createFromStream(readStream);
+            waitFor.push(bufferCreating
+                .then(asset => result.getAssets().publishedCrxBuffer = asset)
+                .catch(err => logWrapper.error(`Writing to buffer failed: ${err.toString()}`)));
+        }
+        if (fileRequirement !== undefined) {
+            const fileCreating = writeAndCreateFileAsset(readStream, fileRequirement, 'published_crx', extensionId + '.crx', options.outCrxFilePath);
+            waitFor.push(fileCreating
+                .then(asset => result.getAssets().publishedCrxFile = asset)
+                .catch(err => logWrapper.error(`Writing to file failed: ${err.toString()}`)));
+        }
+        return Promise
+            .all(waitFor)
+            .then(() => {
+            logWrapper.info(`Downloaded`);
+            return result;
+        });
     });
 }
 exports.downloadCrx = downloadCrx;
@@ -56758,13 +56780,32 @@ exports.downloadCrx = downloadCrx;
 /***/ }),
 
 /***/ 4384:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OptionsValidator = void 0;
-const webstoreApi = __nccwpck_require__(6137);
+const webstoreApi = __importStar(__nccwpck_require__(6137));
 class InternalValidationResult {
     constructor() {
         this.warnings = [];
@@ -56838,13 +56879,41 @@ exports.OptionsValidator = OptionsValidator;
 /***/ }),
 
 /***/ 34:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.publishExt = void 0;
-const webstoreApi = __nccwpck_require__(6137);
+const webstoreApi = __importStar(__nccwpck_require__(6137));
 // noinspection TypeScriptPreferShortImport
 const buildResult_1 = __nccwpck_require__(840);
 function validatePublishStatus(statuses, allowedStatuses) {
@@ -56853,36 +56922,38 @@ function validatePublishStatus(statuses, allowedStatuses) {
         throw new Error(`Publish statuses ${restrictedStatuses.join(', ')} are not allowed`);
     }
 }
-async function publishExt(extensionId, options, logWrapper, apiFacade, extensionVersion) {
-    let publishResult;
-    const publishTarget = options.target
-        ? options.target
-        : webstoreApi.PublishTarget.DEFAULT;
-    try {
-        publishResult = await apiFacade.publish(publishTarget);
-    }
-    catch (error) {
-        const axiosError = error;
-        if (options.ignore500Error &&
-            axiosError.response &&
-            axiosError.response.status === 500) {
-            logWrapper.warn("Publish request ended with HTTP status 500, ignoring due to 'ignorePublish500Error' option");
+function publishExt(extensionId, options, logWrapper, apiFacade, extensionVersion) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let publishResult;
+        const publishTarget = options.target
+            ? options.target
+            : webstoreApi.PublishTarget.DEFAULT;
+        try {
+            publishResult = yield apiFacade.publish(publishTarget);
         }
-        else {
-            throw error;
+        catch (error) {
+            const axiosError = error;
+            if (options.ignore500Error &&
+                axiosError.response &&
+                axiosError.response.status === 500) {
+                logWrapper.warn("Publish request ended with HTTP status 500, ignoring due to 'ignorePublish500Error' option");
+            }
+            else {
+                throw error;
+            }
         }
-    }
-    const allowedStatuses = options.allowedStatuses ||
-        [webstoreApi.PublishStatus.OK, webstoreApi.PublishStatus.ITEM_PENDING_REVIEW];
-    if (publishResult && Array.isArray(publishResult.status)) {
-        validatePublishStatus(publishResult.status, allowedStatuses);
-    }
-    return new buildResult_1.ChromeWebstorePublishedExtAsset({
-        extId: extensionId,
-        extVersion: extensionVersion,
-        target: publishTarget,
-        publishResponse: publishResult,
-        error500: !publishResult
+        const allowedStatuses = options.allowedStatuses ||
+            [webstoreApi.PublishStatus.OK, webstoreApi.PublishStatus.ITEM_PENDING_REVIEW];
+        if (publishResult && Array.isArray(publishResult.status)) {
+            validatePublishStatus(publishResult.status, allowedStatuses);
+        }
+        return new buildResult_1.ChromeWebstorePublishedExtAsset({
+            extId: extensionId,
+            extVersion: extensionVersion,
+            target: publishTarget,
+            publishResponse: publishResult,
+            error500: !publishResult
+        });
     });
 }
 exports.publishExt = publishExt;
@@ -56891,37 +56962,67 @@ exports.publishExt = publishExt;
 /***/ }),
 
 /***/ 2411:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.upload = void 0;
-const webstoreApi = __nccwpck_require__(6137);
+const webstoreApi = __importStar(__nccwpck_require__(6137));
 const errors_1 = __nccwpck_require__(7545);
-async function upload(inputZipBuffer, options, currentWebstoreVersion, apiFacade, inputManifest) {
-    let uploadResult;
-    try {
-        uploadResult = await apiFacade.uploadExisting(inputZipBuffer, options.waitForSuccess);
-    }
-    catch (error) {
-        throw new Error(`Can't upload extension. ${error.toString()}`);
-    }
-    if (uploadResult.uploadState === webstoreApi.UploadState.SUCCESS) {
-        if (!uploadResult.crxVersion && inputManifest) {
-            uploadResult.crxVersion = inputManifest.version;
+function upload(inputZipBuffer, options, currentWebstoreVersion, apiFacade, inputManifest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let uploadResult;
+        try {
+            uploadResult = yield apiFacade.uploadExisting(inputZipBuffer, options.waitForSuccess);
         }
-        return uploadResult;
-    }
-    const uploadErrorMsg = "Can't upload extension. " + (Array.isArray(uploadResult.itemError)
-        ? uploadResult.itemError
-            .map(err => err.error_detail)
-            .join('. ')
-        : `Upload has ${uploadResult.uploadState} state`);
-    if (uploadResult.isFailedBecauseOfPendingReview()) {
-        throw new errors_1.UploadInReviewError(uploadErrorMsg, currentWebstoreVersion);
-    }
-    throw new Error(uploadErrorMsg);
+        catch (error) {
+            throw new Error(`Can't upload extension. ${error.toString()}`);
+        }
+        if (uploadResult.uploadState === webstoreApi.UploadState.SUCCESS) {
+            if (!uploadResult.crxVersion && inputManifest) {
+                uploadResult.crxVersion = inputManifest.version;
+            }
+            return uploadResult;
+        }
+        const uploadErrorMsg = "Can't upload extension. " + (Array.isArray(uploadResult.itemError)
+            ? uploadResult.itemError
+                .map(err => err.error_detail)
+                .join('. ')
+            : `Upload has ${uploadResult.uploadState} state`);
+        if (uploadResult.isFailedBecauseOfPendingReview()) {
+            throw new errors_1.UploadInReviewError(uploadErrorMsg, currentWebstoreVersion);
+        }
+        throw new Error(uploadErrorMsg);
+    });
 }
 exports.upload = upload;
 //# sourceMappingURL=upload.js.map
@@ -56929,13 +57030,32 @@ exports.upload = upload;
 /***/ }),
 
 /***/ 1466:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.validateVersion = void 0;
-const versions = __nccwpck_require__(9296);
+const versions = __importStar(__nccwpck_require__(9296));
 const errors_1 = __nccwpck_require__(7545);
 function validateVersion(manifestVersion, oldWebstoreResource, throwIfAlreadyUploaded, logWrapper) {
     if (versions.validate(manifestVersion)) {
@@ -56972,13 +57092,41 @@ exports.validateVersion = validateVersion;
 /***/ }),
 
 /***/ 7837:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ChromeWebstoreApiFacade = void 0;
-const webstoreApi = __nccwpck_require__(6137);
+const webstoreApi = __importStar(__nccwpck_require__(6137));
 const webext_buildtools_utils_1 = __nccwpck_require__(696);
 function delay(ms) {
     return new Promise(resolve => {
@@ -56991,67 +57139,75 @@ class ChromeWebstoreApiFacade {
         this._extensionId = extensionId;
         this._logWrapper = new webext_buildtools_utils_1.LoggerWrapper();
     }
-    static async authorize(clientId, clientSecret, refreshToken, extensionId) {
-        const token = await webstoreApi.fetchToken(clientId, clientSecret, refreshToken);
-        return new ChromeWebstoreApiFacade(token, extensionId);
+    static authorize(clientId, clientSecret, refreshToken, extensionId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const token = yield webstoreApi.fetchToken(clientId, clientSecret, refreshToken);
+            return new ChromeWebstoreApiFacade(token, extensionId);
+        });
     }
     setLogMethod(logMethod) {
         this._logWrapper.logMethod = logMethod;
     }
-    async getCurrentlyUploadedResource() {
-        this._logWrapper.info('Loading information about current ext version...');
-        const current = await this._api.getUpload(this._extensionId);
-        this._logWrapper.info('Finished: %o', current);
-        return current;
+    getCurrentlyUploadedResource() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._logWrapper.info('Loading information about current ext version...');
+            const current = yield this._api.getUpload(this._extensionId);
+            this._logWrapper.info('Finished: %o', current);
+            return current;
+        });
     }
-    async uploadExisting(readStream, waitForSuccess) {
-        this._logWrapper.info(`Uploading ${this._extensionId} extension...`);
-        let result;
-        try {
-            result = await this._api.upload(readStream, this._extensionId);
-        }
-        catch (error) {
-            const axiosError = error;
-            if (axiosError.response && axiosError.response.data) {
-                this._logWrapper.info(`Error response body: %o'`, error.response.data);
-            }
-            throw error;
-        }
-        this._logWrapper.info('Finished: %o', result);
-        if (!waitForSuccess || result.uploadState !== webstoreApi.UploadState.IN_PROGRESS) {
-            return result;
-        }
-        for (let i = 1; i <= waitForSuccess.checkCount; ++i) {
-            this._logWrapper.info(`Upload in progress, waiting ${waitForSuccess.checkIntervalMs} ms...`);
-            await delay(waitForSuccess.checkIntervalMs);
+    uploadExisting(readStream, waitForSuccess) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._logWrapper.info(`Uploading ${this._extensionId} extension...`);
+            let result;
             try {
-                this._logWrapper.info(`Checking upload status...`);
-                result = await this._api.getUpload(this._extensionId);
-                if (result.uploadState !== webstoreApi.UploadState.IN_PROGRESS) {
-                    this._logWrapper.info(`Status changed, response is: %o`, result);
-                    return result;
-                }
+                result = yield this._api.upload(readStream, this._extensionId);
             }
             catch (error) {
-                this._logWrapper.error(error.toString());
+                const axiosError = error;
+                if (axiosError.response && axiosError.response.data) {
+                    this._logWrapper.info(`Error response body: %o'`, error.response.data);
+                }
+                throw error;
             }
-        }
-        return result;
-    }
-    async publish(target) {
-        this._logWrapper.info(`Publishing ${this._extensionId} extension, target: '${target}'...`);
-        try {
-            const result = await this._api.publish(this._extensionId, target);
             this._logWrapper.info('Finished: %o', result);
-            return result;
-        }
-        catch (error) {
-            const axiosError = error;
-            if (axiosError.response && axiosError.response.data) {
-                this._logWrapper.info(`Error response body: %o'`, axiosError.response.data);
+            if (!waitForSuccess || result.uploadState !== webstoreApi.UploadState.IN_PROGRESS) {
+                return result;
             }
-            throw error;
-        }
+            for (let i = 1; i <= waitForSuccess.checkCount; ++i) {
+                this._logWrapper.info(`Upload in progress, waiting ${waitForSuccess.checkIntervalMs} ms...`);
+                yield delay(waitForSuccess.checkIntervalMs);
+                try {
+                    this._logWrapper.info(`Checking upload status...`);
+                    result = yield this._api.getUpload(this._extensionId);
+                    if (result.uploadState !== webstoreApi.UploadState.IN_PROGRESS) {
+                        this._logWrapper.info(`Status changed, response is: %o`, result);
+                        return result;
+                    }
+                }
+                catch (error) {
+                    this._logWrapper.error(error.toString());
+                }
+            }
+            return result;
+        });
+    }
+    publish(target) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._logWrapper.info(`Publishing ${this._extensionId} extension, target: '${target}'...`);
+            try {
+                const result = yield this._api.publish(this._extensionId, target);
+                this._logWrapper.info('Finished: %o', result);
+                return result;
+            }
+            catch (error) {
+                const axiosError = error;
+                if (axiosError.response && axiosError.response.data) {
+                    this._logWrapper.info(`Error response body: %o'`, axiosError.response.data);
+                }
+                throw error;
+            }
+        });
     }
 }
 exports.ChromeWebstoreApiFacade = ChromeWebstoreApiFacade;
@@ -57166,29 +57322,22 @@ exports.UploadInReviewError = UploadInReviewError;
 /***/ }),
 
 /***/ 6773:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const builder_1 = __nccwpck_require__(5616);
 exports["default"] = builder_1.ChromeWebstoreBuilder;
-__exportStar(__nccwpck_require__(686), exports);
-__exportStar(__nccwpck_require__(7363), exports);
-__exportStar(__nccwpck_require__(6340), exports);
-__exportStar(__nccwpck_require__(1864), exports);
-__exportStar(__nccwpck_require__(840), exports);
-__exportStar(__nccwpck_require__(7545), exports);
+var buildResult_1 = __nccwpck_require__(840);
+Object.defineProperty(exports, "ChromeWebstoreBuildResult", ({ enumerable: true, get: function () { return buildResult_1.ChromeWebstoreBuildResult; } }));
+Object.defineProperty(exports, "ChromeWebstoreUploadedExtAsset", ({ enumerable: true, get: function () { return buildResult_1.ChromeWebstoreUploadedExtAsset; } }));
+Object.defineProperty(exports, "ChromeWebstorePublishedExtAsset", ({ enumerable: true, get: function () { return buildResult_1.ChromeWebstorePublishedExtAsset; } }));
+var errors_1 = __nccwpck_require__(7545);
+Object.defineProperty(exports, "InvalidManifestVersionError", ({ enumerable: true, get: function () { return errors_1.InvalidManifestVersionError; } }));
+Object.defineProperty(exports, "NewerVersionAlreadyUploadedError", ({ enumerable: true, get: function () { return errors_1.NewerVersionAlreadyUploadedError; } }));
+Object.defineProperty(exports, "SameVersionAlreadyUploadedError", ({ enumerable: true, get: function () { return errors_1.SameVersionAlreadyUploadedError; } }));
+Object.defineProperty(exports, "UploadInReviewError", ({ enumerable: true, get: function () { return errors_1.UploadInReviewError; } }));
 var typed_chrome_webstore_api_1 = __nccwpck_require__(6137);
 Object.defineProperty(exports, "WebstoreResource", ({ enumerable: true, get: function () { return typed_chrome_webstore_api_1.WebstoreResource; } }));
 //# sourceMappingURL=index.js.map
@@ -64872,38 +65021,6 @@ function wrappy (fn, cb) {
     return ret
   }
 }
-
-
-/***/ }),
-
-/***/ 686:
-/***/ ((module) => {
-
-module.exports = eval("require")("../declarations/options");
-
-
-/***/ }),
-
-/***/ 6340:
-/***/ ((module) => {
-
-module.exports = eval("require")("../declarations/publishedExtInfo");
-
-
-/***/ }),
-
-/***/ 7363:
-/***/ ((module) => {
-
-module.exports = eval("require")("../declarations/uploadedExtInfo");
-
-
-/***/ }),
-
-/***/ 1864:
-/***/ ((module) => {
-
-module.exports = eval("require")("../declarations/waitForWebstoreOptions");
 
 
 /***/ }),
