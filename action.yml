@@ -1,4 +1,4 @@
-name: 'Upload en extension to Chrome Web Store'
+name: 'Upload an extension to Chrome Web Store'
 description: 'Upload your WebExtension to Chrome Web Store'
 author: 'cardinalby'
 inputs:
