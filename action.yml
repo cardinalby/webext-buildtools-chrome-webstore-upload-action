@@ -1,4 +1,4 @@
-name: 'webext-buildtools-chrome-webstore-upload-action'
+name: 'Upload en extension to Chrome Web Store'
 description: 'Upload your WebExtension to Chrome Web Store'
 author: 'cardinalby'
 inputs:
