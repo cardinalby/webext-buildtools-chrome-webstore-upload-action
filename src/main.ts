@@ -17,7 +17,7 @@ async function run(): Promise<void> {
     try {
         await runImpl();
     } catch (error) {
-        ghActions.setFailed(error.message);
+        ghActions.setFailed(String(error));
     }
 }
 
