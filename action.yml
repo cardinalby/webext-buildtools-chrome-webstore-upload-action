@@ -38,7 +38,7 @@ outputs:
   inReviewError:
     description: '`true` if failed because item is currently in review and upload was rejected'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   icon: 'package'
