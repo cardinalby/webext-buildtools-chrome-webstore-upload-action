@@ -6278,7 +6278,7 @@ var bigInt = (function (undefined) {
 
     BigInteger.prototype.toString = function (radix, alphabet) {
         if (radix === undefined) radix = 10;
-        if (radix !== 10) return toBaseString(this, radix, alphabet);
+        if (radix !== 10 || alphabet) return toBaseString(this, radix, alphabet);
         var v = this.value, l = v.length, str = String(v[--l]), zeros = "0000000", digit;
         while (--l >= 0) {
             digit = String(v[l]);
@@ -6290,7 +6290,7 @@ var bigInt = (function (undefined) {
 
     SmallInteger.prototype.toString = function (radix, alphabet) {
         if (radix === undefined) radix = 10;
-        if (radix != 10) return toBaseString(this, radix, alphabet);
+        if (radix != 10 || alphabet) return toBaseString(this, radix, alphabet);
         return String(this.value);
     };
 
@@ -16259,7 +16259,7 @@ var Stream = __nccwpck_require__(7431);
 /*<replacement>*/
 
 var Buffer = (__nccwpck_require__(1867).Buffer);
-var OurUint8Array = global.Uint8Array || function () {};
+var OurUint8Array = (typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {}).Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
 }
@@ -16829,8 +16829,8 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
       // also returned false.
       // => Check whether `dest` is still a piping destination.
       if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
-        debug('false write response, pause', src._readableState.awaitDrain);
-        src._readableState.awaitDrain++;
+        debug('false write response, pause', state.awaitDrain);
+        state.awaitDrain++;
         increasedAwaitDrain = true;
       }
       src.pause();
@@ -16924,7 +16924,7 @@ Readable.prototype.unpipe = function (dest) {
     state.flowing = false;
 
     for (var i = 0; i < len; i++) {
-      dests[i].emit('unpipe', this, unpipeInfo);
+      dests[i].emit('unpipe', this, { hasUnpiped: false });
     }return this;
   }
 
@@ -17534,7 +17534,7 @@ var Stream = __nccwpck_require__(7431);
 /*<replacement>*/
 
 var Buffer = (__nccwpck_require__(1867).Buffer);
-var OurUint8Array = global.Uint8Array || function () {};
+var OurUint8Array = (typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {}).Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
 }
@@ -17802,7 +17802,7 @@ Writable.prototype.uncork = function () {
   if (state.corked) {
     state.corked--;
 
-    if (!state.writing && !state.corked && !state.finished && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
+    if (!state.writing && !state.corked && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
   }
 };
 
@@ -18044,7 +18044,7 @@ Writable.prototype.end = function (chunk, encoding, cb) {
   }
 
   // ignore unnecessary end() calls.
-  if (!state.ending && !state.finished) endWritable(this, state, cb);
+  if (!state.ending) endWritable(this, state, cb);
 };
 
 function needFinish(state) {
@@ -18105,11 +18105,9 @@ function onCorkedFinish(corkReq, state, err) {
     cb(err);
     entry = entry.next;
   }
-  if (state.corkedRequestsFree) {
-    state.corkedRequestsFree.next = corkReq;
-  } else {
-    state.corkedRequestsFree = corkReq;
-  }
+
+  // reuse the free corkReq.
+  state.corkedRequestsFree.next = corkReq;
 }
 
 Object.defineProperty(Writable.prototype, 'destroyed', {
@@ -18203,7 +18201,6 @@ module.exports = function () {
 
   BufferList.prototype.concat = function concat(n) {
     if (this.length === 0) return Buffer.alloc(0);
-    if (this.length === 1) return this.head.data;
     var ret = Buffer.allocUnsafe(n >>> 0);
     var p = this.head;
     var i = 0;
@@ -18248,9 +18245,15 @@ function destroy(err, cb) {
   if (readableDestroyed || writableDestroyed) {
     if (cb) {
       cb(err);
-    } else if (err && (!this._writableState || !this._writableState.errorEmitted)) {
-      pna.nextTick(emitErrorNT, this, err);
+    } else if (err) {
+      if (!this._writableState) {
+        pna.nextTick(emitErrorNT, this, err);
+      } else if (!this._writableState.errorEmitted) {
+        this._writableState.errorEmitted = true;
+        pna.nextTick(emitErrorNT, this, err);
+      }
     }
+
     return this;
   }
 
@@ -18268,9 +18271,11 @@ function destroy(err, cb) {
 
   this._destroy(err || null, function (err) {
     if (!cb && err) {
-      pna.nextTick(emitErrorNT, _this, err);
-      if (_this._writableState) {
+      if (!_this._writableState) {
+        pna.nextTick(emitErrorNT, _this, err);
+      } else if (!_this._writableState.errorEmitted) {
         _this._writableState.errorEmitted = true;
+        pna.nextTick(emitErrorNT, _this, err);
       }
     } else if (cb) {
       cb(err);
@@ -18292,6 +18297,8 @@ function undestroy() {
     this._writableState.destroyed = false;
     this._writableState.ended = false;
     this._writableState.ending = false;
+    this._writableState.finalCalled = false;
+    this._writableState.prefinished = false;
     this._writableState.finished = false;
     this._writableState.errorEmitted = false;
   }
@@ -26964,7 +26971,7 @@ function patch (fs) {
         var backoff = 0;
         fs$rename(from, to, function CB (er) {
           if (er
-              && (er.code === "EACCES" || er.code === "EPERM")
+              && (er.code === "EACCES" || er.code === "EPERM" || er.code === "EBUSY")
               && Date.now() - start < 60000) {
             setTimeout(function() {
               fs.stat(to, function (stater, st) {
@@ -54454,11 +54461,8 @@ exports.fromCallback = function (fn) {
     if (typeof args[args.length - 1] === 'function') fn.apply(this, args)
     else {
       return new Promise((resolve, reject) => {
-        fn.call(
-          this,
-          ...args,
-          (err, res) => (err != null) ? reject(err) : resolve(res)
-        )
+        args.push((err, res) => (err != null) ? reject(err) : resolve(res))
+        fn.apply(this, args)
       })
     }
   }, 'name', { value: fn.name })
@@ -54468,7 +54472,10 @@ exports.fromPromise = function (fn) {
   return Object.defineProperty(function (...args) {
     const cb = args[args.length - 1]
     if (typeof cb !== 'function') return fn.apply(this, args)
-    else fn.apply(this, args.slice(0, -1)).then(r => cb(null, r), cb)
+    else {
+      args.pop()
+      fn.apply(this, args).then(r => cb(null, r), cb)
+    }
   }, 'name', { value: fn.name })
 }
 
@@ -54775,10 +54782,17 @@ module.exports = function centralDirectory(source, options) {
       }
     })
     .then(function() {
+      if (vars.commentLength) return endDir.pull(vars.commentLength).then(function(comment) {
+        vars.comment = comment.toString('utf8');
+      });
+    })
+    .then(function() {
       source.stream(vars.offsetToStartOfCentralDirectory).pipe(records);
 
       vars.extract = function(opts) {
         if (!opts || !opts.path) throw new Error('PATH_MISSING');
+        // make sure path is normalized before using it
+        opts.path = path.resolve(path.normalize(opts.path));
         return vars.files.then(function(files) {
           return Promise.map(files, function(entry) {
             if (entry.type == 'Directory') return;
@@ -54799,7 +54813,7 @@ module.exports = function centralDirectory(source, options) {
                 .on('close',resolve)
                 .on('error',reject);
             });
-          }, opts.concurrency > 1 ? {concurrency: opts.concurrency || undefined} : undefined);
+          }, { concurrency: opts.concurrency > 1 ? opts.concurrency : 1 });
         });
       };
 
@@ -54831,7 +54845,7 @@ module.exports = function centralDirectory(source, options) {
         return records.pull(vars.fileNameLength).then(function(fileNameBuffer) {
           vars.pathBuffer = fileNameBuffer;
           vars.path = fileNameBuffer.toString('utf8');
-          vars.isUnicode = vars.flags & 0x11;
+          vars.isUnicode = (vars.flags & 0x800) != 0;
           return records.pull(vars.extraFieldLength);
         })
         .then(function(extraField) {
@@ -54957,6 +54971,10 @@ module.exports = {
     };
 
     return directory(source, options);
+  },
+
+  custom: function(source, options) {
+    return directory(source, options);
   }
 };
 
@@ -55074,7 +55092,9 @@ module.exports = function unzip(source,offset,_password, directoryVars) {
         .on('error',function(err) { entry.emit('error',err);})
         .pipe(entry)
         .on('finish', function() {
-          if (req.abort)
+          if(req.destroy)
+            req.destroy()
+          else if (req.abort)
             req.abort();
           else if (req.close)
             req.close();
@@ -55177,10 +55197,9 @@ PullStream.prototype.stream = function(eof,includeEof) {
     }
     
     if (!done) {
-      if (self.finished && !this.__ended) {
+      if (self.finished) {
         self.removeListener('chunk',pull);
         self.emit('error', new Error('FILE_ENDED'));
-        this.__ended = true;
         return;
       }
       
@@ -55339,6 +55358,7 @@ function Parse(opts) {
 
   PullStream.call(self, self._opts);
   self.on('finish',function() {
+    self.emit('end');
     self.emit('close');
   });
   self._readRecord().catch(function(e) {
@@ -55364,16 +55384,19 @@ Parse.prototype._readRecord = function () {
       return self._readFile();
     }
     else if (signature === 0x02014b50) {
-      self.__ended = true;
+      self.reachedCD = true;
       return self._readCentralDirectoryFileHeader();
     }
     else if (signature === 0x06054b50) {
       return self._readEndOfCentralDirectoryRecord();
     }
-    else if (self.__ended) {
-      return self.pull(endDirectorySignature).then(function() {
-          return self._readEndOfCentralDirectoryRecord();
-        });
+    else if (self.reachedCD) {
+      // _readEndOfCentralDirectoryRecord expects the EOCD
+      // signature to be consumed so set includeEof=true
+      var includeEof = true;
+      return self.pull(endDirectorySignature, includeEof).then(function() {
+        return self._readEndOfCentralDirectoryRecord();
+      });
     }
     else
       self.emit('error', new Error('invalid signature: 0x' + signature.toString(16)));
@@ -55443,7 +55466,7 @@ Parse.prototype._readFile = function () {
       entry.props.path = fileName;
       entry.props.pathBuffer = fileNameBuffer;
       entry.props.flags = {
-        "isUnicode": vars.flags & 0x11
+        "isUnicode": (vars.flags & 0x800) != 0
       };
       entry.type = (vars.uncompressedSize === 0 && /[\/\\]$/.test(fileName)) ? 'Directory' : 'File';
 
@@ -55977,7 +56000,7 @@ var Stream = __nccwpck_require__(1398);
 /*<replacement>*/
 
 var Buffer = (__nccwpck_require__(1867).Buffer);
-var OurUint8Array = global.Uint8Array || function () {};
+var OurUint8Array = (typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {}).Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
 }
@@ -56547,8 +56570,8 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
       // also returned false.
       // => Check whether `dest` is still a piping destination.
       if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
-        debug('false write response, pause', src._readableState.awaitDrain);
-        src._readableState.awaitDrain++;
+        debug('false write response, pause', state.awaitDrain);
+        state.awaitDrain++;
         increasedAwaitDrain = true;
       }
       src.pause();
@@ -56642,7 +56665,7 @@ Readable.prototype.unpipe = function (dest) {
     state.flowing = false;
 
     for (var i = 0; i < len; i++) {
-      dests[i].emit('unpipe', this, unpipeInfo);
+      dests[i].emit('unpipe', this, { hasUnpiped: false });
     }return this;
   }
 
@@ -57252,7 +57275,7 @@ var Stream = __nccwpck_require__(1398);
 /*<replacement>*/
 
 var Buffer = (__nccwpck_require__(1867).Buffer);
-var OurUint8Array = global.Uint8Array || function () {};
+var OurUint8Array = (typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {}).Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
 }
@@ -57520,7 +57543,7 @@ Writable.prototype.uncork = function () {
   if (state.corked) {
     state.corked--;
 
-    if (!state.writing && !state.corked && !state.finished && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
+    if (!state.writing && !state.corked && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
   }
 };
 
@@ -57762,7 +57785,7 @@ Writable.prototype.end = function (chunk, encoding, cb) {
   }
 
   // ignore unnecessary end() calls.
-  if (!state.ending && !state.finished) endWritable(this, state, cb);
+  if (!state.ending) endWritable(this, state, cb);
 };
 
 function needFinish(state) {
@@ -57823,11 +57846,9 @@ function onCorkedFinish(corkReq, state, err) {
     cb(err);
     entry = entry.next;
   }
-  if (state.corkedRequestsFree) {
-    state.corkedRequestsFree.next = corkReq;
-  } else {
-    state.corkedRequestsFree = corkReq;
-  }
+
+  // reuse the free corkReq.
+  state.corkedRequestsFree.next = corkReq;
 }
 
 Object.defineProperty(Writable.prototype, 'destroyed', {
@@ -57921,7 +57942,6 @@ module.exports = function () {
 
   BufferList.prototype.concat = function concat(n) {
     if (this.length === 0) return Buffer.alloc(0);
-    if (this.length === 1) return this.head.data;
     var ret = Buffer.allocUnsafe(n >>> 0);
     var p = this.head;
     var i = 0;
@@ -57966,9 +57986,15 @@ function destroy(err, cb) {
   if (readableDestroyed || writableDestroyed) {
     if (cb) {
       cb(err);
-    } else if (err && (!this._writableState || !this._writableState.errorEmitted)) {
-      pna.nextTick(emitErrorNT, this, err);
+    } else if (err) {
+      if (!this._writableState) {
+        pna.nextTick(emitErrorNT, this, err);
+      } else if (!this._writableState.errorEmitted) {
+        this._writableState.errorEmitted = true;
+        pna.nextTick(emitErrorNT, this, err);
+      }
     }
+
     return this;
   }
 
@@ -57986,9 +58012,11 @@ function destroy(err, cb) {
 
   this._destroy(err || null, function (err) {
     if (!cb && err) {
-      pna.nextTick(emitErrorNT, _this, err);
-      if (_this._writableState) {
+      if (!_this._writableState) {
+        pna.nextTick(emitErrorNT, _this, err);
+      } else if (!_this._writableState.errorEmitted) {
         _this._writableState.errorEmitted = true;
+        pna.nextTick(emitErrorNT, _this, err);
       }
     } else if (cb) {
       cb(err);
@@ -58010,6 +58038,8 @@ function undestroy() {
     this._writableState.destroyed = false;
     this._writableState.ended = false;
     this._writableState.ending = false;
+    this._writableState.finalCalled = false;
+    this._writableState.prefinished = false;
     this._writableState.finished = false;
     this._writableState.errorEmitted = false;
   }
@@ -58803,7 +58833,7 @@ class ChromeWebstoreBuilder extends webext_buildtools_utils_1.AbstractSimpleBuil
     }
     setInputManifest(manifest) {
         if (!manifest.name || !manifest.version) {
-            throw Error('Invalid manifest object, id and name fields are required');
+            throw Error('Invalid manifest object, version and name fields are required');
         }
         this._inputManifest = manifest;
         return this;
@@ -58875,7 +58905,7 @@ class ChromeWebstoreBuilder extends webext_buildtools_utils_1.AbstractSimpleBuil
                 if (this._uploadedExtRequired) {
                     if (!this._inputManifest) {
                         if (!this._inputZipBuffer) {
-                            throw new Error('Input manifest is required upload extension. Neither manifest or zip buffer are set');
+                            throw new Error('Input manifest is required to upload extension. Neither manifest or zip buffer are set');
                         }
                         this._logWrapper.info('Manifest input is not set, reading from zip...');
                         this._inputManifest = yield (0, webext_buildtools_utils_1.extractManifestFromZipBuffer)(this._inputZipBuffer);
@@ -60351,12 +60381,6 @@ function validateManifestObject(data) {
     }
     if (typeof data.version !== 'string') {
         errors.push('version is missing or not a string');
-    }
-    if (data.author !== undefined && typeof data.author !== 'string') {
-        errors.push('author is not a string');
-    }
-    if (data.description !== undefined && typeof data.description !== 'string') {
-        errors.push('description is not a string');
     }
     if (errors.length > 0) {
         throw new Error(errors.join('; '));
